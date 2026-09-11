@@ -18,10 +18,12 @@ export default function AddSunsetForm({
   onClose: () => void;
   onSubmitted: () => void;
 }) {
+  // Default to Paris; MiniLocationPicker tries geolocation on mount and
+  // silently keeps this default if that fails or is denied.
   const [file, setFile] = useState<File | null>(null);
   const [takenAtInput, setTakenAtInput] = useState(() => toLocalInputValue(new Date()));
-  const [lat, setLat] = useState(20);
-  const [lng, setLng] = useState(0);
+  const [lat, setLat] = useState(48.8566);
+  const [lng, setLng] = useState(2.3522);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);

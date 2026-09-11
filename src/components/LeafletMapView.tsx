@@ -15,6 +15,17 @@ function thumbIcon(url: string) {
   });
 }
 
+// OSM's tiles only exist up to Web Mercator's latitude limit (~85.05°);
+// past that there's nothing to render. Capping drag/pan there (while still
+// letting longitude wrap freely via worldCopyJump) stops the map from being
+// pannable into empty/duplicated-tile space above the north pole or below
+// the south pole.
+const MAX_LATITUDE = 85.0511;
+const WORLD_BOUNDS: L.LatLngBoundsExpression = [
+  [-MAX_LATITUDE, -Infinity],
+  [MAX_LATITUDE, Infinity],
+];
+
 export default function LeafletMapView({
   sunsets,
   onSelect,
@@ -28,6 +39,8 @@ export default function LeafletMapView({
       zoom={2}
       minZoom={2}
       worldCopyJump
+      maxBounds={WORLD_BOUNDS}
+      maxBoundsViscosity={1.0}
       style={{ height: "100%", width: "100%" }}
     >
       <TileLayer

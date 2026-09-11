@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { MapContainer, TileLayer, useMapEvents } from "react-leaflet";
+import { useEffect, useRef, useState } from "react";
+import { MapContainer, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import type { Map as LeafletMap } from "leaflet";
 import styles from "./MiniLocationPicker.module.css";
 
@@ -19,6 +19,20 @@ function CenterTracker({
   return null;
 }
 
+// Leaflet measures its container's size once, at construction time. Inside a
+// modal that just mounted, the browser hasn't always finished layout by then
+// (font/scrollbar reflow, the dynamic-import chunk swapping in), so the map
+// can grab a stale 0x0 size and render blank tiles forever until told to
+// re-measure. invalidateSize() on the next frame after mount fixes that.
+function SizeFixer() {
+  const map = useMap();
+  useEffect(() => {
+    const id = requestAnimationFrame(() => map.invalidateSize());
+    return () => cancelAnimationFrame(id);
+  }, [map]);
+  return null;
+}
+
 export default function MiniLocationPicker({
   lat,
   lng,
@@ -32,7 +46,27 @@ export default function MiniLocationPicker({
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState<string | null>(null);
 
-  const useMyLocation = () => {
+  // Auto-locate once on mount. Purely best-effort: on failure/denial the
+  // map just keeps showing the default (Paris) center passed in by the
+  // parent, with no error shown to the user.
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    let cancelled = false;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (!cancelled) {
+          mapRef.current?.flyTo([pos.coords.latitude, pos.coords.longitude], 13);
+        }
+      },
+      () => {},
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const locateMe = () => {
     if (!navigator.geolocation) {
       setLocateError("Geolocation is not supported");
       return;
@@ -66,11 +100,12 @@ export default function MiniLocationPicker({
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <CenterTracker onChange={onChange} />
+          <SizeFixer />
         </MapContainer>
         <div className="pin-drop-marker">📍</div>
       </div>
       <div className={styles.controls}>
-        <button type="button" onClick={useMyLocation} disabled={locating}>
+        <button type="button" onClick={locateMe} disabled={locating}>
           {locating ? "Locating…" : "📍 Use my location"}
         </button>
         <span className={styles.coords}>
