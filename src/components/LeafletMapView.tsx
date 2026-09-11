@@ -6,6 +6,7 @@ import L from "leaflet";
 import "react-leaflet-cluster/dist/assets/MarkerCluster.css";
 import "react-leaflet-cluster/dist/assets/MarkerCluster.Default.css";
 import { SunsetMarker } from "@/lib/types";
+import ColorFilterOverlay from "./ColorFilterOverlay";
 
 function thumbIcon(url: string) {
   return L.divIcon({
@@ -46,6 +47,9 @@ export default function LeafletMapView({
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      <ColorFilterOverlay
+        photos={sunsets.map((s) => ({ lat: s.lat, lng: s.lng, color: s.color }))}
       />
       <MarkerClusterGroup chunkedLoading spiderfyOnMaxZoom>
         {sunsets.map((s) => (

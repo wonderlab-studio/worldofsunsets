@@ -31,7 +31,15 @@ export async function GET(req: NextRequest) {
       status: "APPROVED",
       ...(ms ? { takenAt: { gte: new Date(Date.now() - ms) } } : {}),
     },
-    select: { id: true, thumbPath: true, lat: true, lng: true },
+    select: {
+      id: true,
+      thumbPath: true,
+      lat: true,
+      lng: true,
+      colorR: true,
+      colorG: true,
+      colorB: true,
+    },
     orderBy: { takenAt: "desc" },
   });
 
@@ -41,6 +49,7 @@ export async function GET(req: NextRequest) {
       thumbUrl: `/api/uploads/${s.thumbPath}`,
       lat: s.lat,
       lng: s.lng,
+      color: [s.colorR, s.colorG, s.colorB] as [number, number, number],
     }))
   );
 }
@@ -82,7 +91,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const inputBuffer = Buffer.from(await image.arrayBuffer());
-    const { full, thumb } = await processSunsetImage(inputBuffer);
+    const { full, thumb, avgColor } = await processSunsetImage(inputBuffer);
 
     const imagePath = `${id}/full.webp`;
     const thumbPath = `${id}/thumb.webp`;
@@ -92,7 +101,19 @@ export async function POST(req: NextRequest) {
     const placeName = await reverseGeocode(lat, lng);
 
     const sunset = await prisma.sunset.create({
-      data: { id, imagePath, thumbPath, takenAt, lat, lng, placeName, status: "PENDING" },
+      data: {
+        id,
+        imagePath,
+        thumbPath,
+        takenAt,
+        lat,
+        lng,
+        placeName,
+        status: "PENDING",
+        colorR: avgColor.r,
+        colorG: avgColor.g,
+        colorB: avgColor.b,
+      },
     });
 
     return NextResponse.json({ id: sunset.id }, { status: 201 });

@@ -12,12 +12,37 @@
   margin-bottom: 20px;
 }
 
+.headerActions {
+  display: flex;
+  gap: 10px;
+}
+
 .logoutBtn {
   border: 1px solid #ccc;
   background: #fff;
   border-radius: 6px;
   padding: 8px 14px;
   cursor: pointer;
+}
+
+.resetBtn {
+  border: 1px solid #e74c3c;
+  background: #fff;
+  color: #e74c3c;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.resetBtn:hover {
+  background: #e74c3c;
+  color: #fff;
+}
+
+.resetBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .empty {

@@ -9,6 +9,7 @@ export default function ModerationList() {
   const router = useRouter();
   const [items, setItems] = useState<PendingSunset[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -39,13 +40,32 @@ export default function ModerationList() {
     router.refresh();
   };
 
+  const resetAll = async () => {
+    if (
+      !window.confirm(
+        "Удалить ВСЕ фото, включая уже одобренные? Это действие необратимо."
+      )
+    ) {
+      return;
+    }
+    setResetting(true);
+    const res = await fetch("/api/admin/reset", { method: "POST" });
+    if (res.ok) setItems([]);
+    setResetting(false);
+  };
+
   return (
     <div className={styles.wrap}>
       <div className={styles.header}>
         <h1>Moderation ({items?.length ?? "…"})</h1>
-        <button className={styles.logoutBtn} onClick={logout}>
-          Log out
-        </button>
+        <div className={styles.headerActions}>
+          <button className={styles.resetBtn} onClick={resetAll} disabled={resetting}>
+            {resetting ? "Обнуление…" : "Обнулить всё"}
+          </button>
+          <button className={styles.logoutBtn} onClick={logout}>
+            Log out
+          </button>
+        </div>
       </div>
 
       {items && items.length === 0 && <p className={styles.empty}>Nothing pending.</p>}

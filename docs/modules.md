@@ -12,6 +12,7 @@
 | `image.ts` | `processSunsetImage()`: буфер → `{ full, thumb }` через `sharp` | `full` ≤1600px по большей стороне, `thumb` 120×120 (`cover`), оба WebP |
 | `geocode.ts` | `reverseGeocode(lat, lng)` через Nominatim | Best-effort: любая ошибка/таймаут → `null`, загрузка фото не блокируется. Требует `NOMINATIM_USER_AGENT` в env — без него сразу возвращает `null` с предупреждением в лог |
 | `auth.ts` | Подпись/проверка cookie сессии модератора, проверка пароля | HMAC-SHA256 от `SESSION_SECRET`, TTL 24ч, сравнение через `crypto.timingSafeEqual` (защита от timing-атак на пароль/подпись) |
+| `colorFilterLayer.ts` | Кастомный `L.Layer` — цветовой градиент поверх карты | Canvas-слой, пересчитывается на `moveend`/`zoomend`/`resize`; формула и константы — см. [architecture.md](architecture.md#цветовой-фильтр-на-карте) и [decisions.md](decisions.md#цветовой-фильтр-медианный-цвет-по-региону) |
 | `types.ts` | Общие TS-типы для фронтенда (`SunsetMarker`, `SunsetDetail`, `TimeWindow`, …) | Держать в синхроне с формой ответов API-роутов вручную — общей схемы (zod/trpc) в проекте нет |
 
 ## `src/app/api/` — маршруты
@@ -27,6 +28,7 @@
 | `/api/admin/sunsets` | GET | требует cookie | Список `PENDING` |
 | `/api/admin/sunsets/[id]/approve` | POST | требует cookie | `PENDING → APPROVED` |
 | `/api/admin/sunsets/[id]/decline` | POST | требует cookie | Удаляет запись из БД и файлы с диска |
+| `/api/admin/reset` | POST | требует cookie | **Удаляет вообще все записи** (не только pending) и все файлы фото. Необратимо; подтверждение — на клиенте (`window.confirm` в `ModerationList.tsx`), сервер не переспрашивает |
 
 Проверка cookie не вынесена в middleware — каждый `admin/*`-роут сам вызывает
 `isAdminRequest(req)` в начале. При добавлении нового admin-роута не забыть
@@ -44,8 +46,17 @@
   вне React-дерева). `maxBounds`/`maxBoundsViscosity` ограничивают панораму
   широтой ±85.0511° (предел проекции Web Mercator, за которым тайлов физически
   нет) — см. [decisions.md](decisions.md#границы-карты).
+- **`ColorFilterOverlay.tsx`** — тонкая React-обёртка над `lib/colorFilterLayer.ts`:
+  создаёт кастомный Leaflet-слой один раз на маунте (через `useMap()` +
+  `layer.addTo(map)`), дальше передаёт обновления списка фото в
+  `layer.setPhotos()`, не пересоздавая сам слой. Рендерится в
+  `LeafletMapView.tsx` сразу после `TileLayer`, но фактическая отрисовка
+  происходит в отдельном Leaflet pane (`sunsetColorPane`, zIndex 350) —
+  выше тайлов, ниже маркеров.
 - **`TimeFilter.tsx`** — переключатель Hour/Day/Week/Anytime, чисто
-  презентационный, состояние живёт в `MapApp`.
+  презентационный, состояние живёт в `MapApp`. Влияет и на список меток, и
+  на набор фото, участвующих в цветовом фильтре (оба берутся из одного
+  ответа `GET /api/sunsets?window=...`).
 - **`PhotoModal.tsx`** — полноэкранный просмотр фото, сам грузит
   `GET /api/sunsets/[id]` по `sunsetId` из пропсов.
 - **`AddSunsetForm.tsx`** — форма загрузки. Поле «Where» делегировано
@@ -73,7 +84,9 @@
   решает, что показывать).
 - **`ModerationList.tsx`** — список `PENDING` с кнопками Allow/Decline;
   после действия просто убирает карточку из локального состояния (не
-  перезапрашивает весь список).
+  перезапрашивает весь список). Кнопка «Обнулить всё» вызывает
+  `window.confirm()` и затем `POST /api/admin/reset` — единственное
+  место в коде, где стоит подтверждение перед деструктивным действием.
 
 `src/app/preadmin/page.tsx` — серверный компонент, читает cookie через
 `cookies()` (Next 16: асинхронный API) и решает `LoginForm` vs

@@ -5,6 +5,7 @@ export interface SunsetMarker {
   thumbUrl: string;
   lat: number;
   lng: number;
+  color: [r: number, g: number, b: number];
 }
 
 export interface SunsetDetail {
