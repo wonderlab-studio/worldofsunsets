@@ -1,0 +1,44 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mapBox {
+  position: relative;
+  height: 220px;
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #ddd;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.controls button {
+  border: 1px solid #ccc;
+  background: #f5f5f5;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.controls button:hover {
+  background: #ececec;
+}
+
+.coords {
+  font-size: 12px;
+  color: #666;
+  font-family: monospace;
+}
+
+.error {
+  font-size: 12px;
+  color: #c0392b;
+}
