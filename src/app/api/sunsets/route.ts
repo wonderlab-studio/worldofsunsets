@@ -14,6 +14,14 @@ const WINDOW_MS: Record<string, number | null> = {
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
+// Longitude is cyclic: Leaflet's map.getCenter() does not wrap it back into
+// [-180, 180] when a map is panned more than once around the world, so a
+// legitimate client-picked location can arrive here as e.g. 200 or -370.
+// Normalize instead of rejecting it.
+function normalizeLng(lng: number): number {
+  return ((lng % 360) + 540) % 360 - 180;
+}
+
 export async function GET(req: NextRequest) {
   const window = req.nextUrl.searchParams.get("window") || "anytime";
   const ms = window in WINDOW_MS ? WINDOW_MS[window] : null;
@@ -57,7 +65,7 @@ export async function POST(req: NextRequest) {
 
   const takenAt = typeof takenAtRaw === "string" ? new Date(takenAtRaw) : null;
   const lat = typeof latRaw === "string" ? parseFloat(latRaw) : NaN;
-  const lng = typeof lngRaw === "string" ? parseFloat(lngRaw) : NaN;
+  const lngInput = typeof lngRaw === "string" ? parseFloat(lngRaw) : NaN;
 
   if (!takenAt || Number.isNaN(takenAt.getTime())) {
     return NextResponse.json({ error: "invalid takenAt" }, { status: 400 });
@@ -65,9 +73,10 @@ export async function POST(req: NextRequest) {
   if (Number.isNaN(lat) || lat < -90 || lat > 90) {
     return NextResponse.json({ error: "invalid lat" }, { status: 400 });
   }
-  if (Number.isNaN(lng) || lng < -180 || lng > 180) {
+  if (Number.isNaN(lngInput)) {
     return NextResponse.json({ error: "invalid lng" }, { status: 400 });
   }
+  const lng = normalizeLng(lngInput);
 
   const id = crypto.randomUUID();
 

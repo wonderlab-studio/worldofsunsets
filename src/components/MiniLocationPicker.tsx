@@ -5,6 +5,13 @@ import { MapContainer, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import type { Map as LeafletMap } from "leaflet";
 import styles from "./MiniLocationPicker.module.css";
 
+// Same Web Mercator latitude limit as the main map (see LeafletMapView).
+const MAX_LATITUDE = 85.0511;
+const WORLD_BOUNDS: import("leaflet").LatLngBoundsExpression = [
+  [-MAX_LATITUDE, -Infinity],
+  [MAX_LATITUDE, Infinity],
+];
+
 function CenterTracker({
   onChange,
 }: {
@@ -12,7 +19,11 @@ function CenterTracker({
 }) {
   useMapEvents({
     moveend: (e) => {
-      const c = e.target.getCenter();
+      // getCenter() does NOT wrap longitude to [-180, 180] — panning the
+      // map more than once around the world keeps incrementing/decrementing
+      // it past that range, which the upload API then rejects as invalid.
+      // wrap() normalizes it back before it's ever reported upward.
+      const c = e.target.getCenter().wrap();
       onChange(c.lat, c.lng);
     },
   });
@@ -93,6 +104,8 @@ export default function MiniLocationPicker({
           ref={mapRef}
           center={[lat, lng]}
           zoom={11}
+          maxBounds={WORLD_BOUNDS}
+          maxBoundsViscosity={1.0}
           style={{ height: "100%", width: "100%" }}
         >
           <TileLayer
