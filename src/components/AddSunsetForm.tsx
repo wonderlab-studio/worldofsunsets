@@ -77,15 +77,25 @@ export default function AddSunsetForm({
           <form onSubmit={handleSubmit}>
             <h2>Add sunset</h2>
 
-            <label className={styles.field}>
+            <div className={styles.field}>
               <span>Photo</span>
+              <div className={styles.fileRow}>
+                <label htmlFor="photo-input" className={styles.fileButton}>
+                  Choose file
+                </label>
+                <span className={styles.fileName}>
+                  {file ? file.name : "No file selected"}
+                </span>
+              </div>
               <input
+                id="photo-input"
                 type="file"
                 accept="image/*"
                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                 required
+                className={styles.hiddenFileInput}
               />
-            </label>
+            </div>
 
             <label className={styles.field}>
               <span>When</span>

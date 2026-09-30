@@ -51,12 +51,52 @@
   font-weight: 600;
 }
 
-.field input[type="file"],
 .field input[type="datetime-local"] {
   border: 1px solid #ccc;
   border-radius: 6px;
   padding: 8px;
   font-size: 14px;
+}
+
+.fileRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fileButton {
+  flex-shrink: 0;
+  background: #f0f0f0;
+  color: #1a1a1a;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fileButton:hover {
+  background: #e4e4e4;
+}
+
+.fileName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #555;
+}
+
+.hiddenFileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .primaryBtn {
